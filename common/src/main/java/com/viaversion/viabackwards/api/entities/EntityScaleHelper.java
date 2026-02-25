@@ -35,17 +35,17 @@ import com.viaversion.viaversion.api.data.FullMappings;
 
 /**
  * A modular helper for tracking and injecting entity scaling on older clients.
- * When older clients lack a specific entity, ViaBackwards maps it to a different entity.
+ * When older clients lack a specific entity, ViaBackwards maps it to a chosen existing entity.
  * Sometimes this mapping requires the entity to be scaled (e.g. mapping a tiny baby mob to a large adult mob).
  * 
- * Example Guidance for Future Developers:
- * If Mojang adds a "Vulture" and "Baby Vulture", and you map the Adult Vulture to a Bat:
- *   - The Bat is inherently small.
- *   - You might need to scale UP the *entire* Bat so it looks like an Adult Vulture. 
- *   - If *that* happens, you would apply a baseline scale increase (e.g. 2.0x) to both Adult and Baby.
- *   - However, since there is no "Baby Bat", you would *also* need to track `isBaby` here.
- *   - If `isBaby` is true, you'd apply a *reduced* scale relative to the Adult Vulture's new scale.
- *   - Therefore, you should always verify the math: (Desired Baby Size) / (Fallback Entity Baseline Size).
+ * Example usage for future scenarios:
+ * If Mojang adds a Vulture and a Baby Vulture, and let's say map the adult Vulture to a Bat:
+ *   - We'd need to scale UP the entire Bat so it looks like an adult Vulture. 
+ *   - If that happens, you'd apply a baseline scale increase (like 2.0x) to both adult and baby via the main rewriter.
+ *   - But since there's no baby Bat, you'd also need to track `isBaby` here.
+ *   - If `isBaby` is true, you'd apply a reduced scale relative to the adult Vulture's new scale (e.g., 0.65x).
+ *   - Because `EntityScaleAttributeRewriter` dynamically multiplies the attribute value mid-flight, you simply 
+ *     register `0.65f` for the baby here. The final scale sent to the client will correctly be (2.0 * 0.65) = 1.3x.
  */
 public class EntityScaleHelper {
 
