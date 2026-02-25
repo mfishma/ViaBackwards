@@ -82,7 +82,27 @@ public final class Protocol1_21_2To1_21 extends BackwardsProtocol<ClientboundPac
 
         final SoundRewriter<ClientboundPacket1_21_2> soundRewriter = new SoundRewriter<>(this);
         soundRewriter.registerSound1_19_3(ClientboundPackets1_21_2.SOUND);
-        soundRewriter.registerSound1_19_3(ClientboundPackets1_21_2.SOUND_ENTITY);
+        registerClientbound(ClientboundPackets1_21_2.SOUND_ENTITY, wrapper -> {
+            soundRewriter.getSoundHandler1_19_3().handle(wrapper);
+            if (wrapper.isCancelled()) return;
+
+            final int source = wrapper.passthrough(Types.VAR_INT);
+            final int entityId = wrapper.passthrough(Types.VAR_INT);
+            wrapper.passthrough(Types.FLOAT); // Volume
+            final float pitch = wrapper.read(Types.FLOAT); // Pitch
+            wrapper.passthrough(Types.LONG); // Seed
+
+            float adjustedPitch = pitch;
+            final com.viaversion.viaversion.api.data.entity.StoredEntityData entityData = wrapper.user().getEntityTracker(Protocol1_21_2To1_21.class).entityData(entityId);
+            if (entityData != null) {
+                final com.viaversion.viabackwards.api.entities.EntityScaleData scaleData = entityData.get(com.viaversion.viabackwards.api.entities.EntityScaleData.class);
+                if (scaleData != null && scaleData.isBaby()) {
+                    // Revert the client-side scaling removal by multiplying pitch by (1 / scale)
+                    adjustedPitch = pitch * (1.0f / scaleData.getScale());
+                }
+            }
+            wrapper.write(Types.FLOAT, adjustedPitch);
+        });
         soundRewriter.registerStopSound(ClientboundPackets1_21_2.STOP_SOUND);
 
         particleRewriter.registerLevelParticles1_20_5(ClientboundPackets1_21_2.LEVEL_PARTICLES);
