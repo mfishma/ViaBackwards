@@ -17,6 +17,7 @@
  */
 package com.viaversion.viabackwards.protocol.v1_21_2to1_21.rewriter;
 
+import com.viaversion.viabackwards.api.entities.EntityScaleHelper;
 import com.viaversion.nbt.tag.CompoundTag;
 import com.viaversion.nbt.tag.FloatTag;
 import com.viaversion.nbt.tag.IntTag;
@@ -30,6 +31,7 @@ import com.viaversion.viabackwards.protocol.v1_21_2to1_21.storage.PlayerStorage;
 import com.viaversion.viabackwards.protocol.v1_21_2to1_21.storage.SignStorage;
 import com.viaversion.viabackwards.utils.VelocityUtil;
 import com.viaversion.viaversion.api.data.entity.EntityTracker;
+import com.viaversion.viaversion.api.data.entity.StoredEntityData;
 import com.viaversion.viaversion.api.minecraft.Holder;
 import com.viaversion.viaversion.api.minecraft.Particle;
 import com.viaversion.viaversion.api.minecraft.RegistryEntry;
@@ -642,6 +644,15 @@ public final class EntityPacketRewriter1_21_2 extends EntityRewriter<Clientbound
             VersionedTypes.V1_21.entityDataTypes.optionalComponentType
         );
         registerBlockStateHandler(EntityTypes1_21_2.ABSTRACT_MINECART, 11);
+
+        final EntityScaleHelper scaleHelper = new EntityScaleHelper("minecraft:scale", ClientboundPackets1_21.UPDATE_ATTRIBUTES);
+        scaleHelper.addBabyScale(EntityTypes1_21_2.SQUID, 0.5f);
+        scaleHelper.addBabyScale(EntityTypes1_21_2.GLOW_SQUID, 0.5f);
+        scaleHelper.addBabyScale(EntityTypes1_21_2.DOLPHIN, 0.5f);
+
+        filter().handler((event, meta) -> {
+            scaleHelper.trackAndInject(event, meta, protocol);
+        });
 
         filter().type(EntityTypes1_21_2.CREAKING).cancel(17); // Active
         filter().type(EntityTypes1_21_2.CREAKING).cancel(16); // Can move
