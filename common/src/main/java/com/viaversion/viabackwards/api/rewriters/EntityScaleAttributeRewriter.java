@@ -35,9 +35,11 @@ import com.viaversion.viaversion.rewriter.AttributeRewriter;
 public class EntityScaleAttributeRewriter<C extends ClientboundPacketType> extends AttributeRewriter<C> {
     
     private final String scaleAttributeId;
+    private final Protocol<C, ?, ?, ?> scaleProtocol;
 
     public EntityScaleAttributeRewriter(Protocol<C, ?, ?, ?> protocol, String scaleAttributeId) {
         super(protocol);
+        this.scaleProtocol = protocol;
         this.scaleAttributeId = scaleAttributeId;
     }
 
@@ -47,13 +49,13 @@ public class EntityScaleAttributeRewriter<C extends ClientboundPacketType> exten
 
     @Override
     public void register1_21(C packetType) {
-        protocol().registerClientbound(packetType, wrapper -> {
+        scaleProtocol.registerClientbound(packetType, wrapper -> {
             final int entityId = wrapper.passthrough(Types.VAR_INT);
             
             // Fast lookup for scaling factor, negligible overhead if not present
             float scale = 1.0f;
             try {
-                StoredEntityData data = wrapper.user().getEntityTracker(protocol().getClass()).entityData(entityId);
+                StoredEntityData data = wrapper.user().getEntityTracker(scaleProtocol.getClass()).entityData(entityId);
                 if (data != null && data.has(EntityScaleData.class)) {
                     scale = data.get(EntityScaleData.class).getScale();
                 }
@@ -65,13 +67,13 @@ public class EntityScaleAttributeRewriter<C extends ClientboundPacketType> exten
             int newSize = size;
             
             int scaleId = -1;
-            if (protocol().getMappingData().getAttributeMappings() != null) {
-                scaleId = protocol().getMappingData().getAttributeMappings().id(scaleAttributeId);
+            if (scaleProtocol.getMappingData().getAttributeMappings() != null) {
+                scaleId = scaleProtocol.getMappingData().getAttributeMappings().id(scaleAttributeId);
             }
 
             for (int i = 0; i < size; i++) {
                 final int attributeId = wrapper.read(Types.VAR_INT);
-                final int mappedId = protocol().getMappingData().getNewAttributeId(attributeId);
+                final int mappedId = scaleProtocol.getMappingData().getNewAttributeId(attributeId);
                 if (mappedId == -1) {
                     newSize--;
 
