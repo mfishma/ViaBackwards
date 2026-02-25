@@ -17,13 +17,13 @@
  */
 package com.viaversion.viabackwards.protocol.v1_21_2to1_21.rewriter;
 
-import com.viaversion.viabackwards.api.entities.EntityScaleHelper;
 import com.viaversion.nbt.tag.CompoundTag;
 import com.viaversion.nbt.tag.FloatTag;
 import com.viaversion.nbt.tag.IntTag;
 import com.viaversion.nbt.tag.ListTag;
 import com.viaversion.nbt.tag.Tag;
 import com.viaversion.viabackwards.ViaBackwards;
+import com.viaversion.viabackwards.api.entities.EntityScaleHelper;
 import com.viaversion.viabackwards.api.rewriters.BackwardsRegistryRewriter;
 import com.viaversion.viabackwards.api.rewriters.EntityRewriter;
 import com.viaversion.viabackwards.protocol.v1_21_2to1_21.Protocol1_21_2To1_21;
@@ -648,7 +648,7 @@ public final class EntityPacketRewriter1_21_2 extends EntityRewriter<Clientbound
         final EntityScaleHelper scaleHelper = new EntityScaleHelper("minecraft:scale", ClientboundPackets1_21.UPDATE_ATTRIBUTES);
         scaleHelper.addBabyScale(EntityTypes1_21_2.SQUID, 0.5f);
         scaleHelper.addBabyScale(EntityTypes1_21_2.GLOW_SQUID, 0.5f);
-        scaleHelper.addBabyScale(EntityTypes1_21_2.DOLPHIN, 0.5f);
+        scaleHelper.addBabyScale(EntityTypes1_21_2.DOLPHIN, 0.65f);
 
         filter().handler((event, meta) -> {
             scaleHelper.trackAndInject(event, meta, protocol);
