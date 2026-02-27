@@ -24,6 +24,7 @@ import com.viaversion.nbt.tag.IntTag;
 import com.viaversion.nbt.tag.ListTag;
 import com.viaversion.nbt.tag.StringTag;
 import com.viaversion.nbt.tag.Tag;
+import com.viaversion.viabackwards.ViaBackwards;
 import com.viaversion.viabackwards.api.BackwardsProtocol;
 import com.viaversion.viabackwards.api.data.BackwardsMappingData;
 import com.viaversion.viabackwards.api.data.MappedItem;
@@ -70,17 +71,42 @@ public class BackwardsStructuredItemRewriter<C extends ClientboundPacketType, S 
         customTag.putInt(nbtTagName("id"), item.identifier()); // Save original id
 
         // Add custom model data
-        if (mappedItem.customModelData() != null) {
+        if (mappedItem.customModelData() != null || ViaBackwards.getConfig().passOriginalItemNameToResourcePacks()) {
             if (connection.getProtocolInfo().protocolVersion().newerThanOrEqualTo(ProtocolVersion.v1_21_4)) {
-                if (!dataContainer.has(StructuredDataKey.CUSTOM_MODEL_DATA1_21_4)) {
-                    dataContainer.set(StructuredDataKey.CUSTOM_MODEL_DATA1_21_4, new CustomModelData1_21_4(
-                        new float[]{mappedItem.customModelData().floatValue()},
+                CustomModelData1_21_4 customModelData = dataContainer.get(StructuredDataKey.CUSTOM_MODEL_DATA1_21_4);
+                if (customModelData == null) {
+                    customModelData = new CustomModelData1_21_4(
+                        mappedItem.customModelData() != null ? new float[]{mappedItem.customModelData().floatValue()} : new float[0],
                         new boolean[0],
                         new String[0],
                         EMPTY_INT_ARRAY
-                    ));
+                    );
+                    dataContainer.set(StructuredDataKey.CUSTOM_MODEL_DATA1_21_4, customModelData);
                 }
-            } else if (!dataContainer.has(StructuredDataKey.CUSTOM_MODEL_DATA1_20_5)) {
+
+                if (ViaBackwards.getConfig().passOriginalItemNameToResourcePacks() && mappingData.getFullItemMappings() != null) {
+                    final String identifier = mappingData.getFullItemMappings().identifier(item.identifier());
+                    if (identifier != null) {
+                        final String injection = "viabackwards:" + Key.stripMinecraftNamespace(identifier);
+                        boolean exists = false;
+                        for (final String s : customModelData.strings()) {
+                            if (s.equals(injection)) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) {
+                            final String[] newStrings = new String[customModelData.strings().length + 1];
+                            System.arraycopy(customModelData.strings(), 0, newStrings, 0, customModelData.strings().length);
+                            newStrings[customModelData.strings().length] = injection;
+                            dataContainer.set(StructuredDataKey.CUSTOM_MODEL_DATA1_21_4, new CustomModelData1_21_4(
+                                customModelData.floats(), customModelData.booleans(), newStrings, customModelData.colors()
+                            ));
+                            customTag.putBoolean(nbtTagName("injected_cmd_string"), true);
+                        }
+                    }
+                }
+            } else if (mappedItem.customModelData() != null && !dataContainer.has(StructuredDataKey.CUSTOM_MODEL_DATA1_20_5)) {
                 dataContainer.set(StructuredDataKey.CUSTOM_MODEL_DATA1_20_5, mappedItem.customModelData());
             }
         }
@@ -98,6 +124,22 @@ public class BackwardsStructuredItemRewriter<C extends ClientboundPacketType, S 
         if (removeBackupTag(customData, "id") instanceof final IntTag originalTag) {
             item.setIdentifier(originalTag.asInt());
             removeCustomTag(container, customData);
+        }
+
+        if (removeBackupTag(customData, "injected_cmd_string") != null) {
+            final CustomModelData1_21_4 customModelData = container.get(StructuredDataKey.CUSTOM_MODEL_DATA1_21_4);
+            if (customModelData != null && customModelData.strings() != null) {
+                final List<String> strings = new java.util.ArrayList<>(java.util.Arrays.asList(customModelData.strings()));
+                if (strings.removeIf(s -> s.startsWith("viabackwards:"))) {
+                    if (strings.isEmpty() && customModelData.floats().length == 0 && customModelData.booleans().length == 0 && customModelData.colors().length == 0) {
+                        container.remove(StructuredDataKey.CUSTOM_MODEL_DATA1_21_4);
+                    } else {
+                        container.set(StructuredDataKey.CUSTOM_MODEL_DATA1_21_4, new CustomModelData1_21_4(
+                                customModelData.floats(), customModelData.booleans(), strings.toArray(new String[0]), customModelData.colors()
+                        ));
+                    }
+                }
+            }
         }
     }
 
